@@ -1,38 +1,47 @@
-function applyErrors(user, errors) {
+const seedrandom = require("seedrandom");
+
+function applyErrors(user, errors, seed) {
   if (errors <= 0) return user;
 
   const errorTypes = ["delete", "add", "swap"];
+  const rng = seedrandom(seed);
+
+  const randomChar = () => String.fromCharCode(97 + Math.floor(rng() * 26));
+
+  // Helper function to apply a random error to a string
   const applyError = (str) => {
-    const errorType = errorTypes[Math.floor(Math.random() * errorTypes.length)];
+    const errorType = errorTypes[Math.floor(rng() * errorTypes.length)];
+    const pos = Math.floor(rng() * str.length);
+
     switch (errorType) {
       case "delete":
-        return (
-          str.slice(0, Math.floor(Math.random() * str.length)) +
-          str.slice(Math.floor(Math.random() * str.length) + 1)
-        );
+        return str.slice(0, pos) + str.slice(pos + 1);
       case "add":
-        return (
-          str.slice(0, Math.floor(Math.random() * str.length)) +
-          randomChar() +
-          str.slice(Math.floor(Math.random() * str.length))
-        );
+        return str.slice(0, pos) + randomChar() + str.slice(pos);
       case "swap":
-        const pos = Math.floor(Math.random() * (str.length - 1));
+        if (str.length < 2) return str;
         return str.slice(0, pos) + str[pos + 1] + str[pos] + str.slice(pos + 2);
       default:
         return str;
     }
   };
 
-  const randomChar = () =>
-    String.fromCharCode(97 + Math.floor(Math.random() * 26));
+  let totalErrorsToApply = Math.floor(errors);
+  const probabilityOfExtraError = errors - totalErrorsToApply;
 
-  return {
-    ...user,
-    name: applyError(user.name),
-    address: applyError(user.address),
-    phone: applyError(user.phone),
-  };
+  // Add one extra error probabilistically
+  if (rng() < probabilityOfExtraError) {
+    totalErrorsToApply += 1;
+  }
+
+  const fields = ["name", "address", "phone"];
+
+  for (let i = 0; i < totalErrorsToApply; i++) {
+    const field = fields[Math.floor(rng() * fields.length)];
+    user[field] = applyError(user[field]);
+  }
+
+  return user;
 }
 
 module.exports = { applyErrors };

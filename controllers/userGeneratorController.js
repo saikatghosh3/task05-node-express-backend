@@ -2,25 +2,30 @@ const { generateUserData } = require("../utils/dataGenerator");
 const { applyErrors } = require("../utils/errorSimulator");
 const { generateSeed } = require("../utils/seedGenerator");
 const APIError = require("../utils/apiErrorClass");
+
 exports.getUsers = (req, res) => {
   try {
-    const { region, errors, seed, page } = req.query;
-    if (!region) {
-      throw new APIError(
-        400,
-        "region should not be empty, please pass region as query params"
-      );
-    }
-    const seedValue = generateSeed(seed, page);
-    let users = generateUserData(region, seedValue);
+    const { region, errors = 0, seed, page = 1 } = req.query;
 
-    users = users.map((user) => applyErrors(user, errors));
+    if (!region) {
+      throw new APIError(400, "Region is required as query params.");
+    }
+
+    const batchSize = 20;
+    const seedValue = generateSeed(seed, page);
+
+    // Generate base user data
+    let users = generateUserData(region, seedValue, page, batchSize);
+
+    // Apply errors to each user
+    users = users.map((user) => applyErrors(user, errors, seedValue));
+
     res.json(users);
   } catch (e) {
     const status = e.status || 500;
     res.status(status).json({
       status: status,
-      message: e && e.message ? e.message : "Something goes wrong",
+      message: e.message || "Something went wrong",
     });
   }
 };
@@ -33,7 +38,7 @@ exports.generateSeed = (req, res) => {
     const status = e.status || 500;
     res.status(status).json({
       status: status,
-      message: e && e.message ? e.message : "Something goes wrong",
+      message: e.message || "Something went wrong",
     });
   }
 };

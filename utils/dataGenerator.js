@@ -5,21 +5,24 @@ const { regions } = require("../configs/regions");
 
 const supportedRegions = Object.keys(regions).join(", ");
 
-function generateUserData(region, seed) {
+function generateUserData(region, seed, page = 1, batchSize = 20) {
   const users = [];
   const locale = regions[region];
-  if (locale) {
-    faker.setLocale(locale);
-  } else {
+
+  if (!locale) {
     throw new APIError(
       400,
       `Locale for region "${region}" is not supported. Supported regions: ${supportedRegions}`
     );
   }
 
-  const rng = seedrandom(seed);
+  // Set region-based locale
+  faker.setLocale(locale);
 
-  for (let i = 0; i < 20; i++) {
+  // Create a seeded random number generator
+  const rng = seedrandom(seed + page);
+
+  for (let i = 0; i < batchSize; i++) {
     const firstName = faker.name.firstName();
     const lastName = faker.name.lastName();
     const address = `${faker.address.city()}, ${faker.address.streetAddress(
@@ -28,7 +31,7 @@ function generateUserData(region, seed) {
     const phone = faker.phone.number();
 
     users.push({
-      index: i + 1,
+      index: (page - 1) * batchSize + i + 1,
       id: Math.floor(rng() * 1000000),
       name: `${firstName} ${lastName}`,
       address: address,

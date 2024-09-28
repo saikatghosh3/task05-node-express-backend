@@ -1,5 +1,5 @@
 function generateSeed(seed, page) {
-  return Number(seed) + Number(page);
+  return `${seed}-${page}`;
 }
 
 module.exports = { generateSeed };
